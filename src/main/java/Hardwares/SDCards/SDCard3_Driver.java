@@ -25,4 +25,8 @@ public class SDCard3_Driver {
     public void eject() {
         sdCard3.getCard().eject();
     }
+
+    public boolean hasFailure() {
+        return sdCard3.getCard().failure();
+    }
 }
