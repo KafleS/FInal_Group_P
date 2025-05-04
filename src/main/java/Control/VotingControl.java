@@ -9,18 +9,22 @@ import Hardwares.SDCards.SDCard1_Driver;
 import Hardwares.SDCards.SDCard2_Driver;
 import Hardwares.SDCards.SDCard3_Driver;
 import Hardwares.latch.LatchDriver;
+import Manager.VotingManager;
 
 public class VotingControl {
     private CardHolder cardHolder;
     private Monitor monitor;
+    private VotingManager votingManager;
 
-    public VotingControl(CardHolder cardHolder,
+    public VotingControl(VotingManager votingManager,
+            CardHolder cardHolder,
                          LatchDriver latchDriver,
                          BatteryDriver batteryDriver,
                          PrinterDriver printerDriver,
                          SDCard1_Driver sdCard1,
                          SDCard2_Driver sdCard2,
                          SDCard3_Driver sdCard3) {
+        this.votingManager = votingManager;
         this.cardHolder = cardHolder;
         this.monitor = new Monitor(latchDriver, batteryDriver, printerDriver, sdCard1, sdCard2, sdCard3);
         new Thread(this.monitor).start();
@@ -38,10 +42,16 @@ public class VotingControl {
         String readData = cardHolder.readCard();
         System.out.println("Read from card: " + readData);
 
-        // Add more logic here: validation, authorization, etc.
 
         cardHolder.eraseCard();
         cardHolder.ejectCard();
+    }
+
+    //Initializes the Ballot and templates
+    public void initializeBallot() {
+        System.out.println("[VotingControl] Loading the ballot");
+        votingManager.loadBallot();
+        System.out.println("[VotingControl] Ballot loaded successfully.");
     }
 
     public void stopMonitor() {
