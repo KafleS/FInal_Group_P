@@ -57,7 +57,7 @@ public class Monitor implements Runnable {
             }
 
             try {
-                Thread.sleep(2000); // check every 2 seconds
+                Thread.sleep(5000); // check every 5 seconds
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }

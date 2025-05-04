@@ -7,6 +7,7 @@ import Hardwares.Printer.Printer;
 import Hardwares.Printer.PrinterDriver;
 import Hardwares.SDCards.*;
 import Hardwares.latch.*;
+import Control.FailureSimulator;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -45,6 +46,10 @@ public class Main {
         );
 
         new Thread(() -> runCardReaderServer(votingControl)).start();
+
+        // Start terminal failure simulator
+        FailureSimulator simulator = new FailureSimulator(printerDriver, latchDriver, sd1, cardReader);
+        new Thread(simulator).start();
 
         System.out.println("System booted. Waiting for card input...");
     }
