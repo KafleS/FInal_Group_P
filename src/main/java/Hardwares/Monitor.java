@@ -1,13 +1,31 @@
+// --- Monitor.java ---
 package Hardwares;
 
 import Hardwares.latch.LatchDriver;
+import Hardwares.Battery.BatteryDriver;
+import Hardwares.Printer.PrinterDriver;
+import Hardwares.SDCards.SDCard1_Driver;
+import Hardwares.SDCards.SDCard2_Driver;
+import Hardwares.SDCards.SDCard3_Driver;
 
 public class Monitor implements Runnable {
     private final LatchDriver latchDriver;
+    private final BatteryDriver batteryDriver;
+    private final PrinterDriver printerDriver;
+    private final SDCard1_Driver sdCard1;
+    private final SDCard2_Driver sdCard2;
+    private final SDCard3_Driver sdCard3;
+
     private volatile boolean running = true;
 
-    public Monitor(LatchDriver latchDriver) {
+    public Monitor(LatchDriver latchDriver, BatteryDriver batteryDriver, PrinterDriver printerDriver,
+                   SDCard1_Driver sdCard1, SDCard2_Driver sdCard2, SDCard3_Driver sdCard3) {
         this.latchDriver = latchDriver;
+        this.batteryDriver = batteryDriver;
+        this.printerDriver = printerDriver;
+        this.sdCard1 = sdCard1;
+        this.sdCard2 = sdCard2;
+        this.sdCard3 = sdCard3;
     }
 
     public void stopMonitoring() {
@@ -17,10 +35,25 @@ public class Monitor implements Runnable {
     @Override
     public void run() {
         while (running) {
+            System.out.println("[Monitor] Checking hardware status...");
+
             if (latchDriver.hasFailure()) {
                 System.out.println("[Monitor] Latch failure detected!");
-            } else {
-                System.out.println("[Monitor] Latch system is functioning normally.");
+            }
+            if (batteryDriver.hasFailed()) {
+                System.out.println("[Monitor] Battery failure detected!");
+            }
+            if (printerDriver.hasFailed()) {
+                System.out.println("[Monitor] Printer failure detected!");
+            }
+            if (sdCard1.hasFailure()) {
+                System.out.println("[Monitor] SDCard1 failure detected!");
+            }
+            if (sdCard2.hasFailure()) {
+                System.out.println("[Monitor] SDCard2 failure detected!");
+            }
+            if (sdCard3.hasFailure()) {
+                System.out.println("[Monitor] SDCard3 failure detected!");
             }
 
             try {
