@@ -7,6 +7,7 @@ import Hardwares.Printer.Printer;
 import Hardwares.Printer.PrinterDriver;
 import Hardwares.SDCards.*;
 import Hardwares.latch.*;
+import Manager.VotingManager;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -33,8 +34,11 @@ public class Main {
         SDCard2_Driver sd2 = new SDCard2_Driver(new SDCard2(SDCard.Operation.write));
         SDCard3_Driver sd3 = new SDCard3_Driver(new SDCard3(SDCard.Operation.write ));
 
+        VotingManager votingManager = new VotingManager();
+
         // Voting control setup
         VotingControl votingControl = new VotingControl(
+                votingManager,
                 holder,
                 latchDriver,
                 batteryDriver,
@@ -43,6 +47,7 @@ public class Main {
                 sd2,
                 sd3
         );
+        votingControl.initializeBallot();
 
         new Thread(() -> runCardReaderServer(votingControl)).start();
 
