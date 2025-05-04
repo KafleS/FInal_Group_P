@@ -1,4 +1,4 @@
-package Monitors.SDCardDriver;
+package Hardwares.SDCards;
 
 import java.io.IOException;
 import java.util.List;

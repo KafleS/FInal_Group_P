@@ -1,4 +1,4 @@
-package simple;
+package Hardwares.SDCards;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

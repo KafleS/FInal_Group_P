@@ -1,6 +1,4 @@
-package Monitors.SDCardDriver;
-
-import simple.SDCard;
+package Hardwares.SDCards;
 
 public class SDCard3 {
     private final SDCard card;
