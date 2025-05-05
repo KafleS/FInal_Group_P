@@ -6,39 +6,59 @@ import Display.TemplateFactory;
 import Hardwares.SDCards.SDCard;
 import Hardwares.SDCards.SDCard1;
 import Hardwares.SDCards.SDCard1_Driver;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.Arrays;
 import java.util.List;
 
-public class VotingManager {
+public class VotingManager implements Runnable {
 
     private static BlankBallot loadedBlankBallot;
     private static List<Template> loadedTemplates;
 
-
+    @Override
+    public void run() {
+        loadBallot();
+    }
 
     /**
      * Loads the Ballot and template from the SD Card.
      */
     public void loadBallot() {
         try {
-
-            //  SD Card 1 (slot 0 for ballot.txt)
             SDCard1 sdCard1 = new SDCard1(SDCard.Operation.read);
             SDCard1_Driver sdCard1Driver = new SDCard1_Driver(sdCard1);
 
-            // Read JSON from ballot.txt via SD cardl
             String json = String.join("\n", sdCard1Driver.read());
             System.out.println("[SUCCESS] JSON read from SD Card 1:");
+            System.out.println("json value " + json);
+            System.out.println("[DEBUG] Raw JSON:");
             System.out.println(json);
 
-            //  Convert JSON into Ballot
-            loadedBlankBallot = new BlankBallot(json);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
 
-            //  Generate Templates from Ballot
+            if (!root.has("propositions")) {
+                System.out.println("[ERROR] 'propositions' missing in JSON!");
+            } else {
+                System.out.println("[INFO] Found propositions, count: " + root.get("propositions").size());
+            }
+
+            loadedBlankBallot = new BlankBallot(json);
             loadedTemplates = TemplateFactory.fromBallot(loadedBlankBallot);
 
+            System.out.println("loaded templates1: " + loadedTemplates);
+            System.out.println("Ballot Title: " + loadedBlankBallot.getPreamble().getBallotTitle());
+            System.out.println("County: " + loadedBlankBallot.getPreamble().getCounty());
 
-            System.out.println("loaded templates: " + loadedTemplates);
+            for (Template t : loadedTemplates) {
+                System.out.println("\nTemplate ID: " + t.getId());
+                System.out.println("Title: " + t.getTitle());
+                System.out.println("Description: " + t.getDescription());
+                System.out.println("Instructions: " + t.getInstructions());
+                System.out.println("Options: " + Arrays.toString(t.getQuestionData().getOptions()));
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -51,6 +71,10 @@ public class VotingManager {
     }
 
     public static List<Template> getLoadedTemplates() {
+        if (loadedTemplates == null) {
+            new VotingManager().loadBallot();
+        }
+        System.out.println("loaded templates2: " + loadedTemplates + " ");
         return loadedTemplates;
     }
 }

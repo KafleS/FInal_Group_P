@@ -20,7 +20,7 @@ public class ScreenDriver {
     }
 
     public boolean isExitReady() {
-        return screen.exitReady();
+        return screen. exitReady();
     }
 
     public String fetchTemplate() {
