@@ -1,0 +1,16 @@
+{
+  "preamble" : {
+    "ballotTitle" : "Election",
+    "county" : "USA",
+    "state" : "NY",
+    "ballotID" : "34844",
+    "endDate" : "2025-05-07"
+  },
+  "propositions" : [ {
+    "id" : 0,
+    "title" : "Vice President",
+    "description" : "US Vice President",
+    "options" : [ "Kamala", "JD " ],
+    "maxSelections" : 1
+  } ]
+}
