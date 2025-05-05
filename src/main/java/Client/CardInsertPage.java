@@ -35,6 +35,20 @@ public class CardInsertPage extends Application {
     public void start(Stage stage) {
 
 
+        try {
+            // Run VotingManager in a separate thread and wait for it to finish
+            VotingManager manager = new VotingManager();
+            Thread managerThread = new Thread(manager);
+            managerThread.start();
+            managerThread.join();
+
+            System.out.println("[INFO] Ballot and templates loaded before UI setup.");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.out.println("[ERROR] VotingManager thread was interrupted.");
+        }
+
+
         ImageView logo = new ImageView(new Image(
                 Objects.requireNonNull(getClass().getResourceAsStream("/assets/logo.png"),
                         "Logo image not found")));
@@ -81,6 +95,7 @@ public class CardInsertPage extends Application {
                             cardReader.ejectCard();
                         } else {
                             List<Template> templates = VotingManager.getLoadedTemplates();
+                            System.out.println("Templates from card insert: " + templates);
                             if (templates == null || templates.isEmpty()) {
                                 status.setText("Ballot not loaded yet.");
                                 cardReader.ejectCard();
@@ -155,7 +170,7 @@ public class CardInsertPage extends Application {
 
     private void displayVoterTemplates(Stage stage, List<Template> templates, int index) {
         Template current = templates.get(index);
-        VoterPage voterPage = new VoterPage(current, stage);
+        VoterPage voterPage = new VoterPage(current, stage, index, templates.size());
 
         voterPage.getPreviousButton().setOnAction(e -> {
             if (index > 0) displayVoterTemplates(stage, templates, index - 1);
