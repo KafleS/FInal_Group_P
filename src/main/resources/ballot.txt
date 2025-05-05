@@ -1,0 +1,22 @@
+{
+  "preamble" : {
+    "ballotTitle" : "Election",
+    "county" : "USA",
+    "state" : "nm",
+    "ballotID" : "124ol",
+    "endDate" : "2025-05-09"
+  },
+  "propositions" : [ {
+    "id" : 0,
+    "title" : "President",
+    "description" : "US president",
+    "options" : [ "trump", "biden" ],
+    "maxSelections" : 1
+  }, {
+    "id" : 1,
+    "title" : "vice",
+    "description" : "us vice president",
+    "options" : [ "Kamala", "JD Vance" ],
+    "maxSelections" : 1
+  } ]
+}
