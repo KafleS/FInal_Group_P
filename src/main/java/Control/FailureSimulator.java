@@ -3,8 +3,11 @@ package Control;
 import java.util.Scanner;
 import Card.*;
 import Hardwares.Printer.PrinterDriver;
+import Hardwares.Screens.Screen;
+import Hardwares.Screens.ScreenDriver;
 import Hardwares.latch.LatchDriver;
 import Hardwares.SDCards.SDCard1_Driver;
+
 
 public class FailureSimulator implements Runnable {
     private final PrinterDriver printerDriver;
@@ -12,11 +15,14 @@ public class FailureSimulator implements Runnable {
     private final SDCard1_Driver sdCard1Driver;
     private final CardReader cardReader;
 
-    public FailureSimulator(PrinterDriver printerDriver, LatchDriver latchDriver, SDCard1_Driver sdCard1Driver, CardReader cardReader) {
+    private final ScreenDriver screenDriver;
+
+    public FailureSimulator(PrinterDriver printerDriver, LatchDriver latchDriver, SDCard1_Driver sdCard1Driver, CardReader cardReader, ScreenDriver screenDriver) {
         this.printerDriver = printerDriver;
         this.latchDriver = latchDriver;
         this.sdCard1Driver = sdCard1Driver;
         this.cardReader = cardReader;
+        this.screenDriver = screenDriver;
     }
 
     @Override
@@ -32,6 +38,8 @@ public class FailureSimulator implements Runnable {
                     System.out.println("Type 1 to fail printer");
                     System.out.println("Type 2 to fail latch");
                     System.out.println("Type 3 to fail SDCard1");
+                    System.out.println("Type 4 to fail screen");
+                    System.out.println();
                     String failType = scanner.nextLine().trim();
                     handleFailure(failType);
                     break;
@@ -74,6 +82,10 @@ public class FailureSimulator implements Runnable {
             case "3":
                 // Simulated via card logic — you'd need a `setFailure` on the SDCard
                 System.out.println("SDCard1 failure not implemented (needs support)");
+                break;
+
+            case "4":
+                System.out.println("Screen Failed");
                 break;
             default:
                 System.out.println("Invalid failure type");
