@@ -1,3 +1,4 @@
+// --- VotingControl.java ---
 package Control;
 
 import Card.*;
@@ -8,62 +9,45 @@ import Hardwares.SDCards.SDCard1_Driver;
 import Hardwares.SDCards.SDCard2_Driver;
 import Hardwares.SDCards.SDCard3_Driver;
 import Hardwares.latch.LatchDriver;
-import Hardwares.Screens.ScreenDriver;
 import Manager.VotingManager;
-
-import java.io.PrintWriter;
 
 public class VotingControl {
     private CardHolder cardHolder;
     private Monitor monitor;
     private VotingManager votingManager;
-    private ScreenDriver screenDriver;
 
     public VotingControl(VotingManager votingManager,
-                         CardHolder cardHolder,
+            CardHolder cardHolder,
                          LatchDriver latchDriver,
                          BatteryDriver batteryDriver,
                          PrinterDriver printerDriver,
                          SDCard1_Driver sdCard1,
                          SDCard2_Driver sdCard2,
-                         SDCard3_Driver sdCard3,
-                         ScreenDriver screenDriver) {
+                         SDCard3_Driver sdCard3) {
         this.votingManager = votingManager;
         this.cardHolder = cardHolder;
-        this.screenDriver = screenDriver;
-        this.monitor = new Monitor(
-                latchDriver,
-                batteryDriver,
-                printerDriver,
-                sdCard1,
-                sdCard2,
-                sdCard3,
-                screenDriver
-        );
+        this.monitor = new Monitor(latchDriver, batteryDriver, printerDriver, sdCard1, sdCard2, sdCard3);
         new Thread(this.monitor).start();
     }
 
-    public void notifyCardInserted(String cardData, PrintWriter out) {
+    public void notifyCardInserted(String cardData) {
         System.out.println("VotingControl received card data: " + cardData);
 
         if (cardHolder.hasFailure()) {
-            out.println("[Screen] Card reader failure. Cannot process card.");
+            System.out.println("Error: Card reader failure. Cannot process card.");
             return;
         }
 
         cardHolder.insertCard(cardData);
         String readData = cardHolder.readCard();
-        out.println("[Screen] Card accepted. Welcome: " + readData);
+        System.out.println("Read from card: " + readData);
 
-        screenDriver.turnOn();  // Turn screen ON before presenting
-        screenDriver.present("Ballot Screen Template");
-        out.println("[Screen] Ballot Screen Template presented.");
 
         cardHolder.eraseCard();
         cardHolder.ejectCard();
-        out.println("[Screen] Card ejected and erased.");
     }
 
+    //Initializes the Ballot and templates
     public void initializeBallot() {
         System.out.println("[VotingControl] Loading the ballot");
         votingManager.loadBallot();
