@@ -1,5 +1,12 @@
 package Client;
 
+import Card.CardType;
+import Card.CardReader;
+import Display.Template;
+import Display.VoterPage;
+import Hardwares.Screens.Screen;
+import Hardwares.Screens.ScreenDriver;
+import Manager.VotingManager;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -9,51 +16,92 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import  Hardwares.SDCards.SDCard;
 
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.Socket;
+
+import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 public class CardInsertPage extends Application {
 
+    private static boolean votingOpen = false;
+    private final CardReader cardReader = new CardReader();
+    ScreenDriver screenDriver = new ScreenDriver(new Screen());
+
+
+
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage stage) {
+
+
         ImageView logo = new ImageView(new Image(
                 Objects.requireNonNull(getClass().getResourceAsStream("/assets/logo.png"),
                         "Logo image not found")));
-        logo.setFitWidth(600);
+        logo.setFitWidth(300);
         logo.setPreserveRatio(true);
 
-        Label instructionLabel = new Label("Enter Card ID (e.g., A12345678 or V87654321):");
-        instructionLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
-
+        // UI Elements
+        Label prompt = new Label("Insert Card (e.g., A12345678 or V12345678):");
+        prompt.setStyle("-fx-text-fill: white; -fx-font-size: 16px;");
         TextField cardInput = new TextField();
-        cardInput.setPromptText("Insert Card ID...");
-        cardInput.setMaxWidth(280);
-
+        cardInput.setPromptText("Enter Card ID...");
+        cardInput.setMaxWidth(250);
         Button submitButton = new Button("Insert Card");
-        Label statusLabel = new Label();
-        statusLabel.setStyle("-fx-text-fill: white;");
+        Label status = new Label();
+        status.setStyle("-fx-text-fill: white;");
 
         submitButton.setOnAction(e -> {
             String cardId = cardInput.getText().trim();
+
             if (cardId.isEmpty()) {
-                statusLabel.setText("Please enter a card ID.");
+                status.setText("Card ID cannot be empty.");
                 return;
             }
 
-            try (Socket socket = new Socket("localhost", 12345)) {
-                PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
-                out.println(cardId);
-                statusLabel.setText("Card data sent successfully!");
+            if (cardReader.failure()) {
+                status.setText("Card reader failure. Please contact technician.");
+                return;
+            }
+
+            if (cardReader.isCardPresent()) {
+                status.setText("Card already inserted. Please eject first.");
+                return;
+            }
+
+            try {
+                cardReader.insertCard(cardId);
+                CardType type = cardReader.getCardType();
+
+                switch (type) {
+                    case ADMIN -> showAdminScene(stage);
+                    case VOTER -> {
+                        if (!votingOpen) {
+                            status.setText("Voting is not open. Ask admin.");
+                            cardReader.ejectCard();
+                        } else {
+                            List<Template> templates = VotingManager.getLoadedTemplates();
+                            if (templates == null || templates.isEmpty()) {
+                                status.setText("Ballot not loaded yet.");
+                                cardReader.ejectCard();
+                            } else {
+                                displayVoterTemplates(stage, templates, 0);
+                            }
+                        }
+                    }
+                    case UNKNOWN -> {
+                        status.setText("Invalid card. Use A/V followed by 8 digits.");
+                        cardReader.ejectCard();
+                    }
+                }
+
             } catch (Exception ex) {
+                status.setText("Error: " + ex.getMessage());
                 ex.printStackTrace();
-                statusLabel.setText("Failed to connect to server.");
             }
         });
 
-        VBox contentBox = new VBox(15, instructionLabel, cardInput, submitButton, statusLabel);
+        VBox contentBox = new VBox(15, prompt, cardInput, submitButton, status);
         contentBox.setAlignment(Pos.CENTER);
         contentBox.setMaxWidth(300);
 
@@ -62,10 +110,82 @@ public class CardInsertPage extends Application {
         root.setAlignment(Pos.TOP_CENTER);
         root.setStyle("-fx-background-color: #003366;");
 
-        Scene scene = new Scene(root, 1300, 900);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Voting Machine");
-        primaryStage.show();
+        stage.setScene(new Scene(root, 1300, 900));
+        stage.setTitle("Voting Machine");
+        stage.show();
+    }
+
+    private void showAdminScene(Stage stage) {
+        VBox adminLayout = new VBox(20);
+        adminLayout.setAlignment(Pos.CENTER);
+        Label adminLabel = new Label("Admin Panel");
+        adminLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+        Button controlButton = new Button();
+        Label status = new Label();
+        Button ejectButton = new Button("Eject Card");
+
+
+
+        if (!votingOpen) {
+            controlButton.setText("Open Voting");
+            controlButton.setOnAction(e -> {
+                votingOpen = true;
+                status.setText("Voting session started.");
+                controlButton.setText("Close Voting");
+
+            });
+        } else {
+            controlButton.setText("Close Voting");
+            controlButton.setOnAction(e -> {
+                votingOpen = false;
+                status.setText(" Voting session closed.");
+                controlButton.setDisable(true);
+            });
+        }
+
+        ejectButton.setOnAction(e -> {
+            cardReader.ejectCard();
+            start(stage);
+        });
+
+        adminLayout.getChildren().addAll(adminLabel, controlButton, status, ejectButton);
+        Scene adminScene = new Scene(adminLayout, 800, 700);
+        stage.setScene(adminScene);
+    }
+
+    private void displayVoterTemplates(Stage stage, List<Template> templates, int index) {
+        Template current = templates.get(index);
+        VoterPage voterPage = new VoterPage(current, stage);
+
+        voterPage.getPreviousButton().setOnAction(e -> {
+            if (index > 0) displayVoterTemplates(stage, templates, index - 1);
+            else start(stage);
+        });
+
+        voterPage.getNextButton().setOnAction(e -> {
+            if (index < templates.size() - 1)
+                displayVoterTemplates(stage, templates, index + 1);
+            else {
+                VBox finishLayout = new VBox(20);
+                finishLayout.setAlignment(Pos.CENTER);
+                Label doneLabel = new Label("Your vote has been recorded.");
+                Button ejectButton = new Button("Eject Card");
+
+                ejectButton.setOnAction(ev -> {
+                    try {
+                        cardReader.ejectCard();
+                        start(stage);
+                    } catch (Exception ex) {
+                        doneLabel.setText("Eject failed: " + ex.getMessage());
+                    }
+                });
+
+                finishLayout.getChildren().addAll(doneLabel, ejectButton);
+                stage.setScene(new Scene(finishLayout, 600, 800));
+            }
+        });
+
+        stage.setScene(voterPage.getScene());
     }
 
     public static void main(String[] args) {

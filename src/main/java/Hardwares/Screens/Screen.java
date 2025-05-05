@@ -31,7 +31,7 @@ public class Screen {
 
     public String returnTemplate() {
         if (!status && currentTemplate != null) {
-            return currentTemplate + " (user-modified)";
+            return currentTemplate;
         }
         return null;
     }

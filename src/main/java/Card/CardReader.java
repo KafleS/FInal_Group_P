@@ -1,6 +1,8 @@
 package Card;
 
 
+import java.io.IOException;
+
 public class CardReader {
     public boolean isCardInserted = false;
     private String cardData = null;
@@ -28,6 +30,16 @@ public class CardReader {
             cardData = "";
             System.out.println("Card data erased.");
         }
+    }
+    public CardType getCardType() throws IOException {
+        if (!isCardInserted || cardData == null) {
+            throw new IOException("No card present to check type.");
+        }
+        return CardType.resolve(cardData);
+    }
+
+    public boolean isCardPresent() {
+        return isCardInserted;
     }
 
     public boolean failure() {

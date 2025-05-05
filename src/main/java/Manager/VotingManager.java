@@ -26,7 +26,7 @@ public class VotingManager {
             SDCard1 sdCard1 = new SDCard1(SDCard.Operation.read);
             SDCard1_Driver sdCard1Driver = new SDCard1_Driver(sdCard1);
 
-            // Read JSON from ballot.txt via SD card
+            // Read JSON from ballot.txt via SD cardl
             String json = String.join("\n", sdCard1Driver.read());
             System.out.println("[SUCCESS] JSON read from SD Card 1:");
             System.out.println(json);

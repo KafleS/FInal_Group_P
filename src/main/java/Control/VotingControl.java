@@ -4,6 +4,7 @@ import Card.*;
 import Hardwares.*;
 import Hardwares.Battery.BatteryDriver;
 import Hardwares.Printer.PrinterDriver;
+import Hardwares.SDCards.SDCard;
 import Hardwares.SDCards.SDCard1_Driver;
 import Hardwares.SDCards.SDCard2_Driver;
 import Hardwares.SDCards.SDCard3_Driver;
@@ -55,8 +56,8 @@ public class VotingControl {
         String readData = cardHolder.readCard();
         out.println("[Screen] Card accepted. Welcome: " + readData);
 
-        screenDriver.turnOn();  // Turn screen ON before presenting
-        screenDriver.present("Ballot Screen Template");
+        screenDriver.turnOn();
+        screenDriver.present("okay");
         out.println("[Screen] Ballot Screen Template presented.");
 
         cardHolder.eraseCard();
