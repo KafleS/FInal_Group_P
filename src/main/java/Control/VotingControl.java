@@ -1,37 +1,37 @@
 package Control;
 
 import Card.*;
-import Hardwares.*;
+import Hardwares.Monitor;
+import Managers.VotingManager;
 import Hardwares.Battery.BatteryDriver;
 import Hardwares.Printer.PrinterDriver;
-import Hardwares.SDCards.SDCard;
-import Hardwares.SDCards.SDCard1_Driver;
 import Hardwares.SDCards.SDCard2_Driver;
 import Hardwares.SDCards.SDCard3_Driver;
-import Hardwares.latch.LatchDriver;
+import Hardwares.SDCards.SDCard1_Driver;
 import Hardwares.Screens.ScreenDriver;
-import Manager.VotingManager;
+import Hardwares.latch.LatchDriver;
 
 import java.io.PrintWriter;
 
 public class VotingControl {
-    private CardHolder cardHolder;
-    private Monitor monitor;
-    private VotingManager votingManager;
-    private ScreenDriver screenDriver;
+    private final CardHolder cardHolder;
+    private final Monitor monitor;
+    private final VotingManager votingManager;
 
-    public VotingControl(VotingManager votingManager,
-                         CardHolder cardHolder,
-                         LatchDriver latchDriver,
-                         BatteryDriver batteryDriver,
-                         PrinterDriver printerDriver,
-                         SDCard1_Driver sdCard1,
-                         SDCard2_Driver sdCard2,
-                         SDCard3_Driver sdCard3,
-                         ScreenDriver screenDriver) {
-        this.votingManager = votingManager;
+    public VotingControl(
+            CardHolder cardHolder,
+            LatchDriver latchDriver,
+            BatteryDriver batteryDriver,
+            PrinterDriver printerDriver,
+            SDCard1_Driver sdCard1,
+            SDCard2_Driver sdCard2,
+            SDCard3_Driver sdCard3,
+            VotingManager votingManager,
+            ScreenDriver screenDriver
+    ) {
         this.cardHolder = cardHolder;
-        this.screenDriver = screenDriver;
+        this.votingManager = votingManager;
+
         this.monitor = new Monitor(
                 latchDriver,
                 batteryDriver,
@@ -56,19 +56,13 @@ public class VotingControl {
         String readData = cardHolder.readCard();
         out.println("[Screen] Card accepted. Welcome: " + readData);
 
-        screenDriver.turnOn();
-        screenDriver.present("okay");
-        out.println("[Screen] Ballot Screen Template presented.");
+        votingManager.start(); // ✅ VotingManager controls ballot and screen now
 
-        cardHolder.eraseCard();
-        cardHolder.ejectCard();
-        out.println("[Screen] Card ejected and erased.");
-    }
+       // out.println("[Screen] Voting session started.");
 
-    public void initializeBallot() {
-        System.out.println("[VotingControl] Loading the ballot");
-        votingManager.loadBallot();
-        System.out.println("[VotingControl] Ballot loaded successfully.");
+//        cardHolder.eraseCard();
+//        cardHolder.ejectCard();
+      //  out.println("[Screen] Card ejected and erased.");
     }
 
     public void stopMonitor() {

@@ -44,24 +44,7 @@ public class FailureSimulator implements Runnable {
                     handleFailure(failType);
                     break;
 
-                case "V":
-                    System.out.println("Enter card ID to insert and erase:");
-                    String cardId = scanner.nextLine().trim();
-                    cardReader.insertCard(cardId);
-                    System.out.println(cardId);
-                    cardReader.eraseCard();
-                    cardReader.ejectCard();
-                    System.out.println(cardId + " card ejected and erased");
-                    break;
 
-                case "A":
-                    System.out.println("Enter card ID to insert and eject only:");
-                    String cardIdA = scanner.nextLine().trim();
-                    cardReader.insertCard(cardIdA);
-                    System.out.println(cardIdA);
-                    cardReader.ejectCard();
-                    System.out.println(cardIdA + " card ejected");
-                    break;
 
                 default:
                     System.out.println("Unknown command. Use F, V, or A.");

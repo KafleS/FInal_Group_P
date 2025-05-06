@@ -8,6 +8,7 @@ import Hardwares.SDCards.SDCard2_Driver;
 import Hardwares.SDCards.SDCard3_Driver;
 import Hardwares.Screens.ScreenDriver;
 
+
 public class Monitor implements Runnable {
     private final LatchDriver latchDriver;
     private final BatteryDriver batteryDriver;
@@ -16,6 +17,8 @@ public class Monitor implements Runnable {
     private final SDCard2_Driver sdCard2;
     private final SDCard3_Driver sdCard3;
     private final ScreenDriver screenDriver;
+
+
 
     private volatile boolean running = true;
 

@@ -11,8 +11,30 @@ import Hardwares.Screens.*;
 
 import Control.FailureSimulator;
 
-import Manager.VotingManager;
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 
+import Managers.VotingManager;
+import Process.VotingProcess;
+
+
+
+
+// --- Main.java ---
+import Card.*;
+import Control.VotingControl;
+import Control.FailureSimulator;
+import Display.Template;
+import Hardwares.Battery.Battery;
+import Hardwares.Battery.BatteryDriver;
+import Hardwares.Printer.Printer;
+import Hardwares.Printer.PrinterDriver;
+import Hardwares.SDCards.*;
+import Hardwares.latch.*;
+import Hardwares.Screens.*;
+import Managers.VotingManager;
+import Process.VotingProcess;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -40,13 +62,14 @@ public class Main {
 
         SDCard1_Driver sd1 = new SDCard1_Driver(new SDCard1(SDCard.Operation.read));
         SDCard2_Driver sd2 = new SDCard2_Driver(new SDCard2(SDCard.Operation.write));
-        SDCard3_Driver sd3 = new SDCard3_Driver(new SDCard3(SDCard.Operation.write ));
+        SDCard3_Driver sd3 = new SDCard3_Driver(new SDCard3(SDCard.Operation.write));
 
-        VotingManager votingManager = new VotingManager();
+        // Create VotingProcess and VotingManager
+        VotingProcess votingProcess = new VotingProcess(screenDriver);
+        VotingManager votingManager = new VotingManager(votingProcess);
 
-        // Voting control setup
+        // Create VotingControl (screenDriver passed only for Monitor)
         VotingControl votingControl = new VotingControl(
-                votingManager,
                 holder,
                 latchDriver,
                 batteryDriver,
@@ -54,14 +77,15 @@ public class Main {
                 sd1,
                 sd2,
                 sd3,
+                votingManager,
                 screenDriver
         );
-        votingControl.initializeBallot();
 
+        // Launch CardReader server
         new Thread(() -> runCardReaderServer(votingControl)).start();
 
-        // Start terminal failure simulator
-        FailureSimulator simulator = new FailureSimulator(printerDriver, latchDriver, sd1, cardReader,screenDriver);
+        // Start Failure Simulator
+        FailureSimulator simulator = new FailureSimulator(printerDriver, latchDriver, sd1, cardReader, screenDriver);
         new Thread(simulator).start();
 
         System.out.println("System booted. Waiting for card input...");
@@ -83,3 +107,26 @@ public class Main {
         }
     }
 }
+
+
+
+
+
+//
+//        try {
+//            List<String> ballotLines = sd1.read();
+//            String json = ballotLines.stream().collect(Collectors.joining("\n"));
+//
+//            BlankBallot ballot = new BlankBallot(json);
+//            List<Template> templates = TemplateFactory.fromBallot(ballot);
+//
+//            screen.screenOn();
+//            if (!templates.isEmpty()) {
+//                screen.presentTemplate(templates.get(0)); // Display the first proposition
+//            } else {
+//                System.out.println("[Main] No templates were created.");
+//            }
+//        } catch (Exception e) {
+//            System.out.println("[Main] Error loading or displaying template:");
+//            e.printStackTrace();
+//        }
