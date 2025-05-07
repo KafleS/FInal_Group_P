@@ -118,8 +118,12 @@ public class VoterPage {
             setDimensionsOnButton(ejectButton);
             ((VBox) scene.getRoot()).getChildren().add(ejectButton);
             ejectButton.setOnAction(ev -> {
-                new CardInsertPage().start(stage);
-               //stage.setScene(new CardInsertPage(stage).getScene());
+                try {
+                    new CardInsertPage().start(stage);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+                //stage.setScene(new CardInsertPage(stage).getScene());
             });
         });
     }

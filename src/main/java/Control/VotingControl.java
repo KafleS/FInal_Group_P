@@ -71,6 +71,10 @@ public class VotingControl {
         System.out.println("[VotingControl] Ballot loaded successfully.");
     }
 
+    public void registerClient(PrintWriter out) {
+        monitor.registerClient(out);
+    }
+
     public void stopMonitor() {
         if (monitor != null) {
             monitor.stopMonitoring();

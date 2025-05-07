@@ -7,6 +7,10 @@ import Hardwares.SDCards.SDCard1_Driver;
 import Hardwares.SDCards.SDCard2_Driver;
 import Hardwares.SDCards.SDCard3_Driver;
 import Hardwares.Screens.ScreenDriver;
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class Monitor implements Runnable {
     private final LatchDriver latchDriver;
@@ -16,6 +20,8 @@ public class Monitor implements Runnable {
     private final SDCard2_Driver sdCard2;
     private final SDCard3_Driver sdCard3;
     private final ScreenDriver screenDriver;
+
+    private final List<PrintWriter> clients = new CopyOnWriteArrayList<>();
 
     private volatile boolean running = true;
 
@@ -39,45 +45,29 @@ public class Monitor implements Runnable {
         running = false;
     }
 
+
+    public void registerClient(PrintWriter out) {
+        clients.add(out);
+    }
+
     @Override
     public void run() {
         while (running) {
             System.out.println("[Monitor] Checking hardware status...");
+            if ( latchDriver.hasFailure() || batteryDriver.hasFailed() || printerDriver.hasFailed()
+                    || sdCard1.hasFailure()    || sdCard2.hasFailure()   || sdCard3.hasFailure()
+                    || screenDriver.hasFailure() ) {
+                screenDriver.turnOff();
+                broadcastFailure("FAILURE");
+                break;
+            }
+            try { TimeUnit.SECONDS.sleep(5); } catch (InterruptedException ignore) {}
+        }
+    }
 
-            if (latchDriver.hasFailure()) {
-                System.out.println("[Monitor] Latch failure detected!");
-                screenDriver.turnOff();
-            }
-            if (batteryDriver.hasFailed()) {
-                System.out.println("[Monitor] Battery failure detected!");
-                screenDriver.turnOff();
-            }
-            if (printerDriver.hasFailed()) {
-                System.out.println("[Monitor] Printer failure detected!");
-                screenDriver.turnOff();
-            }
-            if (sdCard1.hasFailure()) {
-                System.out.println("[Monitor] SDCard1 failure detected!");
-                screenDriver.turnOff();
-            }
-            if (sdCard2.hasFailure()) {
-                System.out.println("[Monitor] SDCard2 failure detected!");
-                screenDriver.turnOff();
-            }
-            if (sdCard3.hasFailure()) {
-                System.out.println("[Monitor] SDCard3 failure detected!");
-                screenDriver.turnOff();
-            }
-            if (screenDriver.hasFailure()) {
-                System.out.println("[Monitor] Screen failure detected!");
-                screenDriver.turnOff(); // Automatically turn off screen if failure
-            }
-
-            try {
-                Thread.sleep(5000); // check every 5 seconds
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+    private void broadcastFailure(String tag) {
+        for (PrintWriter out : clients) {
+            out.println(tag);
         }
     }
 }

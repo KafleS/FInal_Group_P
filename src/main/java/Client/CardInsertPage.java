@@ -8,6 +8,7 @@ import Hardwares.Screens.Screen;
 import Hardwares.Screens.ScreenDriver;
 import Manager.VotingManager;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -19,7 +20,11 @@ import javafx.stage.Stage;
 import  Hardwares.SDCards.SDCard;
 
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,11 +34,38 @@ public class CardInsertPage extends Application {
     private final CardReader cardReader = new CardReader();
     ScreenDriver screenDriver = new ScreenDriver(new Screen());
 
+   private BufferedReader in;
+   private PrintWriter  out;
 
 
     @Override
-    public void start(Stage stage) {
+    public void start(Stage stage) throws IOException {
 
+
+        Socket sock = new Socket("localhost", 12345);
+        out = new PrintWriter(sock.getOutputStream(), true);
+        in  = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+
+
+        new Thread(() -> {
+            try {
+                String line;
+                while ((line = in.readLine()) != null) {
+                    if ("FAILURE".equals(line)) {
+                        Platform.runLater(() -> {
+                            stage.close();
+                            Platform.exit();
+                        });
+                        break;
+                    }
+                }
+            } catch (IOException e) {
+                Platform.runLater(() -> {
+                    stage.close();
+                    Platform.exit();
+                });
+            }
+        }).start();
 
         try {
             // Run VotingManager in a separate thread and wait for it to finish
@@ -160,7 +192,11 @@ public class CardInsertPage extends Application {
 
         ejectButton.setOnAction(e -> {
             cardReader.ejectCard();
-            start(stage);
+            try {
+                start(stage);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         });
 
         adminLayout.getChildren().addAll(adminLabel, controlButton, status, ejectButton);
@@ -174,7 +210,13 @@ public class CardInsertPage extends Application {
 
         voterPage.getPreviousButton().setOnAction(e -> {
             if (index > 0) displayVoterTemplates(stage, templates, index - 1);
-            else start(stage);
+            else {
+                try {
+                    start(stage);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
         });
 
         voterPage.getNextButton().setOnAction(e -> {
