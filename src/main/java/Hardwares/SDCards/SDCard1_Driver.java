@@ -25,6 +25,10 @@ public class SDCard1_Driver {
     public void eject() {
         sdCard1.getCard().eject();
     }
+    public void setFailure(boolean status) {
+        sdCard1.setFailure(status);
+    }
+
 
     public boolean hasFailure() {
         return sdCard1.getCard().failure();

@@ -36,16 +36,16 @@ public class FailureSimulator implements Runnable {
                     printer.setFailure(true);
                     System.out.println("[Sim] Printer failed");
                     break;
-                case "2": /*latch.setFailure(true);*/
+                case "2":
+                    latch.setFailure(true);
                     System.out.println("[Sim] Latch failed");
                     break;
-                case "3": /*sd1.setFailure(true);*/
+                case "3":
+                    sd1.setFailure(true);
                     System.out.println("[Sim] SD1 failed");
                     break;
                 case "4":
                     screen.setFailure(true);
-                    screen.turnOff();
-                    System.out.println("[Sim] Screen off");
                     break;
                 default:
                     System.out.println("[Sim] Invalid code");

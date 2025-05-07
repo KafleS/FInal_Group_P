@@ -23,6 +23,9 @@ public class LatchDriver {
         return latch.failure();
     }
 
+    public void setFailure(boolean status) {
+        latch.setFailure(status);
+    }
     public boolean openDoor() {
         return latch.openDoor();
     }
@@ -30,4 +33,5 @@ public class LatchDriver {
     public boolean closeDoor() {
         return latch.closeDoor();
     }
+
 }

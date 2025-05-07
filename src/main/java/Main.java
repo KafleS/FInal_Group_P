@@ -58,26 +58,21 @@ public class Main {
         );
         votingControl.initializeBallot();
 
-        new Thread(() -> runCardReaderServer(votingControl)).start();
-
-        // Start terminal failure simulator
-        FailureSimulator simulator = new FailureSimulator(printerDriver, latchDriver, sd1, screenDriver);
-        new Thread(simulator).start();
+//        new Thread(() -> runCardReaderServer(votingControl)).start();
 
 
-
-        System.out.println("System booted. Waiting for card input...");
-    }
-
-    public static void runCardReaderServer(VotingControl votingControl) {
-        try (ServerSocket serverSocket = new ServerSocket(12345)) {
-            System.out.println("Card Reader Server started at port 12345");
-            while (true) {
-                try (Socket clientSocket = serverSocket.accept()) {
-                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()), true);
+        new Thread(() -> {
+            try (ServerSocket server = new ServerSocket(12345)) {
+                System.out.println("[Main] Card server listening on port 12345");
+                while (true) {
+                    Socket client = server.accept();
+                    PrintWriter out = new PrintWriter(client.getOutputStream(), true);
+                    // let Monitor send failures to this client
                     votingControl.registerClient(out);
 
+                    BufferedReader in = new BufferedReader(
+                            new InputStreamReader(client.getInputStream())
+                    );
                     new Thread(() -> {
                         try {
                             String card;
@@ -86,12 +81,41 @@ public class Main {
                             }
                         } catch (IOException ignored) {}
                     }, "Client-Handler").start();
-
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        }, "Card-Server").start();
+        // Start terminal failure simulator
+
+        FailureSimulator simulator = new FailureSimulator(printerDriver, latchDriver, sd1, screenDriver);
+        new Thread(simulator).start();
+        System.out.println("System booted. Waiting for card input...");
     }
+
+//    public static void runCardReaderServer(VotingControl votingControl) {
+//        try (ServerSocket serverSocket = new ServerSocket(12345)) {
+//            System.out.println("Card Reader Server started at port 12345");
+//            while (true) {
+//                try (Socket clientSocket = serverSocket.accept()) {
+//                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+//                    PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()), true);
+//                    votingControl.registerClient(out);
+//
+//                    new Thread(() -> {
+//                        try {
+//                            String card;
+//                            while ((card = in.readLine()) != null) {
+//                                votingControl.notifyCardInserted(card, out);
+//                            }
+//                        } catch (IOException ignored) {}
+//                    }, "Client-Handler").start();
+//
+//                }
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
 }

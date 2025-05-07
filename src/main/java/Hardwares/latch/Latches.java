@@ -44,6 +44,7 @@ public class Latches {
     // Demo functions below
     public void setFailure(boolean status) {
         this.status = status;
+        if (status) System.out.println("[Latch] FAILURE detected!");
     }
 
     public boolean openDoor(){
