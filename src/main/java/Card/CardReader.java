@@ -1,6 +1,5 @@
 package Card;
 
-
 import java.io.IOException;
 
 public class CardReader {
@@ -9,11 +8,37 @@ public class CardReader {
 
     private boolean status = false;
 
+    // NEW METHOD: called from backend to handle socket input like "CRreader:V12345678"
+    public void readInput(String socketInput) {
+        if (socketInput == null) {
+            System.out.println("CardReader ignored: null input.");
+            return;
+        }
+
+        // Accept only card-read instructions
+        if (socketInput.startsWith("CRreader:")) {
+            String data = socketInput.substring("CRreader:".length());
+            insertCard(data);
+            System.out.println("[CardReader] Card inserted: " + data);
+        } else {
+            System.out.println("[CardReader] Ignored non-card input: " + socketInput);
+        }
+    }
+
+
     public void insertCard(String data) {
         isCardInserted = true;
+
+        // Strip CRreader: prefix if accidentally included
+        if (data.startsWith("CRreader:")) {
+            data = data.substring("CRreader:".length());
+        }
+
         cardData = data;
-        System.out.println("Card inserted with data: " + data);
+        CardType type = CardType.resolve(cardData);
+        System.out.println("Card inserted with data: " + cardData + " | Type resolved: " + type);
     }
+
 
     public String readCard() {
         return isCardInserted ? cardData : null;
@@ -31,6 +56,7 @@ public class CardReader {
             System.out.println("Card data erased.");
         }
     }
+
     public CardType getCardType() throws IOException {
         if (!isCardInserted || cardData == null) {
             throw new IOException("No card present to check type.");
@@ -46,7 +72,6 @@ public class CardReader {
         return status;
     }
 
-    // Demo functions below
     public void setFailure(boolean status) {
         this.status = status;
     }

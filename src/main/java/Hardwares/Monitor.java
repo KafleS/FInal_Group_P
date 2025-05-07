@@ -49,31 +49,31 @@ public class Monitor implements Runnable {
 
             if (latchDriver.hasFailure()) {
                 System.out.println("[Monitor] Latch failure detected!");
-                screenDriver.turnOff();
+
             }
             if (batteryDriver.hasFailed()) {
                 System.out.println("[Monitor] Battery failure detected!");
-                screenDriver.turnOff();
+
             }
             if (printerDriver.hasFailed()) {
                 System.out.println("[Monitor] Printer failure detected!");
-                screenDriver.turnOff();
+
             }
             if (sdCard1.hasFailure()) {
                 System.out.println("[Monitor] SDCard1 failure detected!");
-                screenDriver.turnOff();
+
             }
             if (sdCard2.hasFailure()) {
                 System.out.println("[Monitor] SDCard2 failure detected!");
-                screenDriver.turnOff();
+
             }
             if (sdCard3.hasFailure()) {
                 System.out.println("[Monitor] SDCard3 failure detected!");
-                screenDriver.turnOff();
+
             }
             if (screenDriver.hasFailure()) {
                 System.out.println("[Monitor] Screen failure detected!");
-                screenDriver.turnOff(); // Automatically turn off screen if failure
+
             }
 
             try {

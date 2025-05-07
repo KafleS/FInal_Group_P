@@ -1,7 +1,7 @@
 package Card;
 
 public enum CardType {
-    ADMIN,
+    OFFICIAL,
     VOTER,
     UNKNOWN;
 
@@ -11,7 +11,7 @@ public enum CardType {
             String digits = cardId.substring(1);
 
             if (digits.matches("\\d{8}")) {
-                if (prefix.equals("A")) return ADMIN;
+                if (prefix.equals("O")) return OFFICIAL;
                 if (prefix.equals("V")) return VOTER;
             }
         }

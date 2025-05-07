@@ -1,4 +1,7 @@
-package Display;
+package Client;
+
+import Client.ButtonData;
+import Client.QuestionInfo;
 
 import java.io.Serializable;
 

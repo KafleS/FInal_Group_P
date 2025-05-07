@@ -12,6 +12,7 @@ import Hardwares.Screens.ScreenDriver;
 import Hardwares.latch.LatchDriver;
 
 import java.io.PrintWriter;
+import java.sql.SQLOutput;
 
 public class VotingControl {
     private final CardHolder cardHolder;
@@ -53,17 +54,28 @@ public class VotingControl {
         }
 
         cardHolder.insertCard(cardData);
-        String readData = cardHolder.readCard();
-        out.println("[Screen] Card accepted. Welcome: " + readData);
 
-        votingManager.start(); // ✅ VotingManager controls ballot and screen now
+        CardType type = cardHolder.getCardType();
 
-       // out.println("[Screen] Voting session started.");
-
-//        cardHolder.eraseCard();
-//        cardHolder.ejectCard();
-      //  out.println("[Screen] Card ejected and erased.");
+        System.out.println("[VotingControl] CardType resolved to: " + type);
+        switch (type) {
+            case VOTER -> {
+                String readData = cardHolder.readCard();
+                System.out.println(" in ma in voting control"+ readData);
+                out.println("[Screen] Voter card accepted. Welcome: " + readData);
+                votingManager.start();
+            }
+            case OFFICIAL -> {
+                out.println("[Screen] Admin card detected. Access denied to voting screen.");
+                //cardHolder.ejectCard();
+            }
+            case UNKNOWN -> {
+                out.println("[Screen] Unknown or invalid card. Please try again.");
+               // cardHolder.ejectCard();
+            }
+        }
     }
+
 
     public void stopMonitor() {
         if (monitor != null) {

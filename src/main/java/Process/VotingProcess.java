@@ -1,6 +1,6 @@
 package Process;
 
-import Display.Template;
+import Client.Template;
 import Hardwares.Screens.ScreenDriver;
 
 public class VotingProcess {
@@ -17,22 +17,30 @@ public class VotingProcess {
             return;
         }
 
+        System.out.println("[VotingProcess] Presenting template: " + template.getTitle());
         screenDriver.present(template);
 
-        while (!screenDriver.isExitReady()) {
+        // Wait up to 1 minute for the user to complete interaction
+        int secondsWaited = 0;
+        while (!screenDriver.getLastMessage().equalsIgnoreCase("done") && secondsWaited < 5) {
             try {
-                Thread.sleep(500);
+                Thread.sleep(500); // wait 1 second at a time
+                secondsWaited++;
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                break;
             }
         }
 
-        Template filled = screenDriver.fetchTemplate();
-        System.out.println("[VotingProcess] Captured vote for: " + filled.getTitle());
+        if (screenDriver.getLastMessage().equalsIgnoreCase("done")) {
+            System.out.println("[VotingProcess] User completed vote for: " + template.getTitle());
+        } else {
+            System.out.println("[VotingProcess] Timeout reached. Proceeding to next template.");
+        }
     }
 
     public void finish() {
-        screenDriver.turnOff();
-        System.out.println("[VotingProcess] Voting complete.");
+        System.out.println("[VotingProcess] Voting complete. Turning off screen.");
+        // Optional: add screenDriver.turnOff() or similar logic
     }
 }

@@ -1,7 +1,7 @@
 package Managers;
 
 import BML.BlankBallot;
-import Display.Template;
+import Client.Template;
 import Display.TemplateFactory;
 import Hardwares.SDCards.SDCard;
 import Hardwares.SDCards.SDCard1;
@@ -35,10 +35,6 @@ public class VotingManager implements Runnable {
         votingProcess.finish();
     }
 
-    public Template getFirstTemplate() {
-        List<Template> templates = loadTemplates();
-        return templates.isEmpty() ? null : templates.get(0);
-    }
 
 
     private List<Template> loadTemplates() {

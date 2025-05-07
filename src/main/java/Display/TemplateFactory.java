@@ -2,9 +2,14 @@ package Display;
 
 import BML.BlankBallot;
 import BML.Proposition;
+import Client.ButtonData;
+import Client.QuestionInfo;
+import Client.Template;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import java.io.Serializable;
 
 public class TemplateFactory {
     public static List<Template> fromBallot(BlankBallot blankBallot) {

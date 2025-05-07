@@ -11,15 +11,15 @@ public class SocketHandler {
 
     /**
      * Sends the card ID to the server and passes the response to the shared ScreenDriver instance.
-     *
-     * @return
      */
-    public static String sendCardToScreen(String cardId) {
+    public static String sendCardInfoToCardReader(String cardId) {
         try (Socket socket = new Socket(HOST, PORT);
              PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            out.println(cardId); // send card
+            // Send card in the correct format so CardReader can process it
+            String cardCommand = "CRreader:" + cardId;
+            out.println(cardCommand);  // send to card reader via shared server
 
             StringBuilder response = new StringBuilder();
             String line;
@@ -28,13 +28,17 @@ public class SocketHandler {
             }
 
             String finalMessage = response.toString().trim();
-
-            // ✅ Access ScreenDriver singleton and deliver message
             ScreenDriver.getInstance().readExternalMessage("scd" + finalMessage);
+            return finalMessage;
 
         } catch (IOException e) {
-            ScreenDriver.getInstance().readExternalMessage("scdError: " + e.getMessage());
+            String error = "scdError: " + e.getMessage();
+            ScreenDriver.getInstance().readExternalMessage(error);
+            return error;
         }
-        return cardId;
     }
+
+
+
+
 }

@@ -1,4 +1,4 @@
-package Display;
+package Client;
 
 import java.io.Serializable;
 
