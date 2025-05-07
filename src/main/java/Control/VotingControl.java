@@ -66,7 +66,6 @@ public class VotingControl {
     }
 
     public void initializeBallot() {
-        System.out.println("[VotingControl] Loading the ballot");
         votingManager.loadBallot();
         System.out.println("[VotingControl] Ballot loaded successfully.");
     }

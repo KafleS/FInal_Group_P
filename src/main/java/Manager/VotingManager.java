@@ -32,9 +32,6 @@ public class VotingManager implements Runnable {
 
             String json = String.join("\n", sdCard1Driver.read());
             System.out.println("[SUCCESS] JSON read from SD Card 1:");
-            System.out.println("json value " + json);
-            System.out.println("[DEBUG] Raw JSON:");
-            System.out.println(json);
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(json);
@@ -47,10 +44,6 @@ public class VotingManager implements Runnable {
 
             loadedBlankBallot = new BlankBallot(json);
             loadedTemplates = TemplateFactory.fromBallot(loadedBlankBallot);
-
-            System.out.println("loaded templates1: " + loadedTemplates);
-            System.out.println("Ballot Title: " + loadedBlankBallot.getPreamble().getBallotTitle());
-            System.out.println("County: " + loadedBlankBallot.getPreamble().getCounty());
 
             for (Template t : loadedTemplates) {
                 System.out.println("\nTemplate ID: " + t.getId());

@@ -126,7 +126,7 @@ public class CardInsertPage extends Application {
                             status.setText("Voting is not open. Ask admin.");
                             cardReader.ejectCard();
                         } else {
-                            List<Template> templates = VotingManager.getLoadedTemplates();
+                            List<Template> templates = screenDriver.fetchTemplate();
                             System.out.println("Templates from card insert: " + templates);
                             if (templates == null || templates.isEmpty()) {
                                 status.setText("Ballot not loaded yet.");

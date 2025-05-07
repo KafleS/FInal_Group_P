@@ -1,7 +1,13 @@
 package Hardwares.Screens;
 
+import Display.Template;
+import Manager.VotingManager;
+
+import java.util.List;
+
 public class ScreenDriver {
     private final Screen screen;
+
 
     public ScreenDriver(Screen screen) {
         this.screen = screen;
@@ -19,12 +25,11 @@ public class ScreenDriver {
         screen.presentTemplate(template);
     }
 
-    public boolean isExitReady() {
-        return screen. exitReady();
-    }
 
-    public String fetchTemplate() {
-        return screen.returnTemplate();
+
+    public List<Template> fetchTemplate() {
+        System.out.println("fetching templates from screen driver here " + VotingManager.getLoadedTemplates());
+        return  VotingManager.getLoadedTemplates();
     }
 
     public boolean hasFailure() {

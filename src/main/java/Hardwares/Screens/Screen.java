@@ -25,16 +25,6 @@ public class Screen {
         }
     }
 
-    public boolean exitReady() {
-        return userReady;
-    }
-
-    public String returnTemplate() {
-        if (!status && currentTemplate != null) {
-            return currentTemplate;
-        }
-        return null;
-    }
 
     public boolean screenFailed() {
         return status;
