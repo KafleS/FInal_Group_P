@@ -39,6 +39,7 @@ public class SDCard {
     }
 
     public void write(String text) throws IOException {
+
         if (operation == Operation.write) {
             Path file = Paths.get(filepath);
 

@@ -123,7 +123,6 @@ public class VoterPage {
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
-                //stage.setScene(new CardInsertPage(stage).getScene());
             });
         });
     }
