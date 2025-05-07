@@ -1,7 +1,7 @@
 package Display;
 
 import Hardwares.SDCards.SDCard;
-import Client.CardInsertPage;
+import Hardwares.Screens.Screen;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -119,7 +119,7 @@ public class VoterPage {
             ((VBox) scene.getRoot()).getChildren().add(ejectButton);
             ejectButton.setOnAction(ev -> {
                 try {
-                    new CardInsertPage().start(stage);
+                    new Screen().start(stage);
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }

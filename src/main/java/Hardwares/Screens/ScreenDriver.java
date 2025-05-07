@@ -28,7 +28,7 @@ public class ScreenDriver {
 
 
     public List<Template> fetchTemplate() {
-        System.out.println("fetching templates from screen driver here " + VotingManager.getLoadedTemplates());
+
         return  VotingManager.getLoadedTemplates();
     }
 
