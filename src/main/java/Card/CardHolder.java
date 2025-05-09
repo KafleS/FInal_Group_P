@@ -38,11 +38,6 @@ public class CardHolder {
     }
 
     public CardType getCardType() {
-        try {
-            return reader.getCardType();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return CardType.UNKNOWN;
-        }
+        return reader.getCardType();
     }
 }
