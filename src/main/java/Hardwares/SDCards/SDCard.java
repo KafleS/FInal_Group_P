@@ -15,18 +15,28 @@ public class SDCard {
         System.out.println("[DEBUG] Slot number selected: " + slotNumber);
         this.filepath = switch (slotNumber) {
             case 0 -> "src/main/resources/ballot.txt";
-            case 1 -> "voter1.txt";
-            case 2 -> "voter2.txt";
+            case 1 -> "src/main/resources/voter1.txt";
+            case 2 -> "src/main/resources/voter2.txt";
             default -> throw new IllegalStateException("Unsupported slot number. Use 0, 1, or 2.");
         };
         this.operation = operation;
     }
 
+
+
     public List<String> read() throws IOException {
         if (operation == Operation.read) {
-            return Files.readAllLines(Paths.get(filepath), StandardCharsets.UTF_8);
-        } else if (operation == null) throw new IOException("No SD card in slot");
-        else throw new IOException("Unable to read from file as operation is not read");
+            Path file = Paths.get(filepath);
+            if (!Files.exists(file)) {
+                System.out.println("[SDCard] File not found: " + filepath + ", returning empty list.");
+                return Collections.emptyList();  // return empty if file doesn't exist
+            }
+            return Files.readAllLines(file, StandardCharsets.UTF_8);
+        } else if (operation == null) {
+            throw new IOException("No SD card in slot");
+        } else {
+            throw new IOException("Unable to read from file as operation is not read");
+        }
     }
 
     public void write(String text) throws IOException {

@@ -1,18 +1,22 @@
-// --- ScreenDriver.java ---
 package Hardwares.Screens;
 
+import Client.Screen;
+import Client.SocketHandler;
 import Client.Template;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 public class ScreenDriver {
-    private static ScreenDriver instance;
 
+    private static ScreenDriver instance;
+    private Screen screen;
     private String receivedMessage = "";
     private boolean screenFailed = false;
     private Template activeTemplate = null;
-    private ObjectOutputStream outputStream = null;  // ✅ Output stream for socket communication
+    private ObjectOutputStream outputStream = null;
+    private ObjectOutputStream out;
 
     public static ScreenDriver getInstance() {
         if (instance == null) {
@@ -21,65 +25,117 @@ public class ScreenDriver {
         return instance;
     }
 
-    private ScreenDriver() {
-        // private constructor to enforce singleton
-    }
+    public ScreenDriver() {
+         // private constructor to enforce singleton
 
-    /**
-     * Set the output stream connected to the screen socket.
-     * This should be done when the server accepts the screen connection.
-     */
+    }
+    public void setScreen(Screen screen) {
+        this.screen = screen;
+    }
     public void setOutputStream(ObjectOutputStream out) {
         this.outputStream = out;
     }
 
-    /**
-     * Present the template to the frontend GUI system via socket.
-     */
     public void present(Template template) {
         if (screenFailed) {
-            System.out.println("[ScreenDriver] Cannot present template. Screen has failed.");
+            System.out.println("[ScreenDriver]  Cannot present template. Screen has failed.");
             return;
         }
 
         this.activeTemplate = template;
         this.receivedMessage = "[Template Ready: " + template.getTitle() + "]";
-        System.out.println("[ScreenDriver] Template prepared for GUI: " + template.getTitle());
+        System.out.println("[ScreenDriver] Preparing to send template:");
+        System.out.println("[ScreenDriver]  Title: " + template.getTitle());
+        System.out.println("[ScreenDriver]   Questions: " + template.getQuestionData());
 
-        // ✅ Send the template to the screen via existing socket output stream
         if (outputStream != null) {
             try {
                 synchronized (outputStream) {
+                    System.out.println("[ScreenDriver]  Sending template over socket...");
                     outputStream.writeObject(template);
                     outputStream.flush();
-                    System.out.println("[ScreenDriver] ✅ Template sent to screen via shared socket.");
+                    System.out.println("[ScreenDriver]  Template sent to screen via shared socket.");
                 }
             } catch (IOException e) {
-                System.err.println("[ScreenDriver] ❌ Failed to send template: " + e.getMessage());
+                System.err.println("[ScreenDriver]  Failed to send template: " + e.getMessage());
             }
         } else {
-            System.err.println("[ScreenDriver] ❌ Output stream to screen not set.");
+            System.err.println("[ScreenDriver]  Output stream to screen not set.");
         }
     }
 
-    /**
-     * Accept backend messages to simulate screen status or feedback.
-     */
-    public void readExternalMessage(String input) {
-        if (input == null) return;
+    public Template waitForTemplateResponse() {
+        try {
+            ObjectOutputStream out = SocketHandler.getInstance().getOutputStream();
+            ObjectInputStream in = SocketHandler.getInstance().getInputStream();
 
-        input = input.trim().toLowerCase();
+            System.out.println("[ScreenDriver]  Waiting for user to finish interaction on screen...");
 
-        if (input.startsWith("scfail")) {
-            screenFailed = true;
-            receivedMessage = "FAILURE: Screen has failed!";
-        } else if (input.startsWith("scd")) {
-            receivedMessage = input.substring(3).trim(); // Remove "scd" prefix
-        } else {
-            receivedMessage = "Unknown message: " + input;
+            while (true) {
+                Thread.sleep(300);
+                System.out.println("[ScreenDriver]  Polling 'isready' from screen...");
+
+                synchronized (out) {
+                    out.writeObject("isready");
+                    out.flush();
+                }
+
+                Object readyResponse = in.readObject();
+                if (readyResponse instanceof Boolean ready) {
+                    System.out.println("[ScreenDriver]  isReady response: " + ready);
+
+                    if (ready) {
+                        System.out.println("[ScreenDriver]  Requesting modified template...");
+                        synchronized (out) {
+                            out.writeObject("gettemplate");
+                            out.flush();
+                        }
+
+                        Object response = in.readObject();
+                        if (response instanceof Template t) {
+                            System.out.println("[ScreenDriver]  Received filled template from screen: " + t.getTitle());
+                            return t;
+                        } else {
+                            System.err.println("[ScreenDriver]  Unexpected response type: " + response.getClass());
+                        }
+                    }
+                } else {
+                    System.err.println("[ScreenDriver] Invalid isReady response: " + readyResponse);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[ScreenDriver]  Error in waitForTemplateResponse: " + e.getMessage());
+            e.printStackTrace();
         }
 
-        System.out.println("[ScreenDriver] Received: " + receivedMessage);
+        return null;
+    }
+
+    public void setFailure(boolean status) {
+        screenFailed = status;
+        sendTag(status ? "SCREEN_FAILURE" : "SCREEN_OK");
+        if (screen != null) screen.setFailure(status);
+    }
+
+    //new code
+    public void turnOff() {
+        screenFailed = true;
+        sendTag("TURN_OFF");
+        if (screen != null) screen.screenOff();
+    }
+
+
+    //new code
+    private void sendTag(String tag) {
+        if (out == null) return;
+        try {
+            synchronized (out) {
+                out.writeObject(tag);
+                out.flush();
+            }
+        } catch (IOException e) {
+            System.err.println("[ScreenDriver] Could not send tag '" + tag + "': " + e.getMessage());
+        }
     }
 
     public String getLastMessage() {

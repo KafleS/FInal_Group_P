@@ -1,44 +1,64 @@
 package Client;
 
-import Hardwares.Screens.ScreenDriver;
-
 import java.io.*;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.List;
 
 public class SocketHandler {
-    private static final String HOST = "localhost";
-    private static final int PORT = 12345;
+    private static SocketHandler instance;
 
-    /**
-     * Sends the card ID to the server and passes the response to the shared ScreenDriver instance.
-     */
-    public static String sendCardInfoToCardReader(String cardId) {
-        try (Socket socket = new Socket(HOST, PORT);
-             PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+    protected final Socket socket;
+    protected ObjectInputStream input;
+    protected ObjectOutputStream output;
+    protected PrintWriter writer;
 
-            // Send card in the correct format so CardReader can process it
-            String cardCommand = "CRreader:" + cardId;
-            out.println(cardCommand);  // send to card reader via shared server
-
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = in.readLine()) != null) {
-                response.append(line).append("\n");
-            }
-
-            String finalMessage = response.toString().trim();
-            ScreenDriver.getInstance().readExternalMessage("scd" + finalMessage);
-            return finalMessage;
-
+    // Private constructor
+    private SocketHandler(Socket socket) {
+        this.socket = socket;
+        try {
+            this.output = new ObjectOutputStream(socket.getOutputStream());
+            this.input = new ObjectInputStream(socket.getInputStream());
+            this.writer = new PrintWriter(socket.getOutputStream(), true);
         } catch (IOException e) {
-            String error = "scdError: " + e.getMessage();
-            ScreenDriver.getInstance().readExternalMessage(error);
-            return error;
+            System.out.println("Unable to get input/output streams.");
+            close();
         }
+    }
+
+    public static void initialize(Socket socket) {
+        if (instance == null) {
+            instance = new SocketHandler(socket);
+        }
+    }
+
+    public static SocketHandler getInstance() {
+        return instance;
+    }
+
+    public ObjectInputStream getInputStream() {
+        return input;
+    }
+
+    public ObjectOutputStream getOutputStream() {
+        return output;
+    }
+
+    public Socket getSocket() {
+        return socket;
     }
 
 
 
 
+    public void close() {
+        try {
+            List<Closeable> objects = Arrays.asList(input, output, socket);
+            for (Closeable object : objects) {
+                if (object != null) object.close();
+            }
+        } catch (IOException e) {
+            System.out.println("Error closing all objects...");
+        }
+    }
 }

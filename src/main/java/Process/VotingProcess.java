@@ -22,9 +22,9 @@ public class VotingProcess {
 
         // Wait up to 1 minute for the user to complete interaction
         int secondsWaited = 0;
-        while (!screenDriver.getLastMessage().equalsIgnoreCase("done") && secondsWaited < 5) {
+        while (!screenDriver.getLastMessage().equalsIgnoreCase("done") && secondsWaited < 7) {
             try {
-                Thread.sleep(500); // wait 1 second at a time
+                Thread.sleep(1000);
                 secondsWaited++;
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -40,7 +40,7 @@ public class VotingProcess {
     }
 
     public void finish() {
-        System.out.println("[VotingProcess] Voting complete. Turning off screen.");
+        System.out.println("[VotingProcess] Voting complete.");
         // Optional: add screenDriver.turnOff() or similar logic
     }
 }

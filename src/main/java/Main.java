@@ -1,5 +1,6 @@
 // --- Main.java ---
 import Card.*;
+import Client.SocketHandler;
 import Control.VotingControl;
 import Hardwares.Battery.Battery;
 import Hardwares.Battery.BatteryDriver;
@@ -9,23 +10,22 @@ import Hardwares.SDCards.*;
 import Hardwares.latch.*;
 import Hardwares.Screens.ScreenDriver;
 
-import Control.FailureSimulator;
-
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import Control.FailureSimulator;
 import Managers.VotingManager;
+import Managers.AdminManager;
 import Process.VotingProcess;
 
 public class Main {
     public static void main(String[] args) {
-        // Card system setup
+        // ✅ Hardware setup
         CardReader cardReader = new CardReader();
         CardReaderDriver driver = new CardReaderDriver(cardReader);
         CardHolder holder = new CardHolder(driver);
 
-        // Hardware setup
         Latches latch = new Latches();
         LatchDriver latchDriver = new LatchDriver(latch);
 
@@ -35,17 +35,15 @@ public class Main {
         Printer printer = new Printer();
         PrinterDriver printerDriver = new PrinterDriver(printer);
 
-        // ScreenDriver (singleton)
         ScreenDriver screenDriver = ScreenDriver.getInstance();
 
-        // SD cards
         SDCard1_Driver sd1 = new SDCard1_Driver(new SDCard1(SDCard.Operation.read));
         SDCard2_Driver sd2 = new SDCard2_Driver(new SDCard2(SDCard.Operation.write));
         SDCard3_Driver sd3 = new SDCard3_Driver(new SDCard3(SDCard.Operation.write));
 
-        // Voting system logic
         VotingProcess votingProcess = new VotingProcess(screenDriver);
         VotingManager votingManager = new VotingManager(votingProcess);
+        AdminManager adminManager = new AdminManager();
 
         VotingControl votingControl = new VotingControl(
                 holder,
@@ -56,55 +54,69 @@ public class Main {
                 sd2,
                 sd3,
                 votingManager,
-                screenDriver
+                screenDriver, adminManager
         );
 
-        // Start card reader socket server
-        new Thread(() -> runCardReaderServer(votingControl)).start();
 
-        // Start failure simulator
-        FailureSimulator simulator = new FailureSimulator(printerDriver, latchDriver, sd1, cardReader, screenDriver);
-        new Thread(simulator).start();
+        new Thread(() -> {
+            FailureSimulator simulator = new FailureSimulator(printerDriver, latchDriver, sd1, screenDriver);
+            simulator.run();
+        }).start();
 
-        System.out.println("System booted. Waiting for card input...");
-    }
 
-    /**
-     * Server that listens for card reader input and shares its socket's output stream with ScreenDriver.
-     */
-    public static void runCardReaderServer(VotingControl votingControl) {
-        try (ServerSocket serverSocket = new ServerSocket(12345)) {
-            System.out.println("Card Reader Server started at port 12345");
+        new Thread(() -> {
+            try (ServerSocket failServer = new ServerSocket(12345)) {
+                System.out.println("[Main] Waiting for FAILURE channel …");
+                Socket failSocket = failServer.accept();
+                System.out.println("[Main] FAILURE channel connected");
 
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("[Main] Screen connected: " + clientSocket.getInetAddress());
+                PrintWriter failOut = new PrintWriter(failSocket.getOutputStream(), true);
+                votingControl.registerClient(failOut);
 
-                try {
-                    // Setup streams
-                    ObjectOutputStream objectOut = new ObjectOutputStream(clientSocket.getOutputStream());
-                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()), true);
-
-                    // Share output stream with ScreenDriver
-                    ScreenDriver.getInstance().setOutputStream(objectOut);
-
-                    // Handle incoming card data
-                    String cardData = in.readLine();
-                    System.out.println("[Main] Received card input: " + cardData);
-
-                    // Route to voting logic
-                    votingControl.notifyCardInserted(cardData, out);
-
-                } catch (Exception e) {
-                    System.err.println("[Main] Error handling client socket: " + e.getMessage());
-                    e.printStackTrace();
+                // keep thread alive while socket open
+                while (!failSocket.isClosed()) {
+                    try { Thread.sleep(1_000); } catch (InterruptedException ignore) {}
                 }
+            } catch (IOException e) {
+                System.err.println("[Main] FAILURE channel error: " + e.getMessage());
             }
+        }).start();
+
+        try {
+            ServerSocket serverSocket = new ServerSocket(9999);
+            System.out.println("[Main] Waiting for screen client...");
+            Socket screenSocket = serverSocket.accept();
+            SocketHandler.initialize(screenSocket);
+
+            System.out.println("[Main] Screen client connected.");
+
+            ObjectOutputStream out = SocketHandler.getInstance().getOutputStream();
+            ObjectInputStream in = SocketHandler.getInstance().getInputStream();
+
+            out.flush();
+            screenDriver.setOutputStream(out);
+
+            new Thread(() -> {
+                while (true) {
+                    try {
+                        Object obj = in.readObject();
+                        if (obj instanceof String msg && msg.startsWith("CRreader:")) {
+                            System.out.println("[Main]  Sending card to VotingControl: ");
+                            votingControl.notifyCardInserted(msg, out);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[Main] Lost connection with screen: " + e.getMessage());
+                        break;
+                    }
+                }
+            }).start();
 
         } catch (IOException e) {
-            System.err.println("[Main] Server socket failure: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("[Main] Failed to open server socket: " + e.getMessage());
         }
+
+
+
+        System.out.println("System booted.");
     }
 }

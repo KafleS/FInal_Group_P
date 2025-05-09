@@ -1,182 +1,260 @@
+
 package Client;
 
 import Hardwares.Screens.ScreenDriver;
+import Managers.VotingManager;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.animation.*;
+import javafx.scene.Node;
+import javafx.util.Duration;
+
+import java.io.*;
+import java.net.Socket;
+import java.util.List;
+import java.util.Objects;
 
 public class Screen extends Application {
-
-    private boolean exitReady = false;
-    private Template currentTemplate = null;
-    private VBox root;
+    private Stage stage;
+    private Template template;
+    private Listener listener;
+    private boolean failed = false;
+    private boolean ready = true;
     private VBox ballotBox;
+    private Socket socket;
+    private PrintWriter out;
+    private BufferedReader in;
+    private boolean isOn = false;
+    private static boolean status = false;
+    private ScreenDriver screenDriver = new ScreenDriver();
+    private List<Template> templates;
+    private int currentTemplateIndex = 0;
+
+
+
+    private void playSceneTransition(Node oldNode, Scene newScene) {
+        RotateTransition rotateOut = new RotateTransition(Duration.millis(400), oldNode);
+        rotateOut.setAxis(javafx.geometry.Point3D.ZERO.add(0, 1, 0));
+        rotateOut.setFromAngle(0);
+        rotateOut.setToAngle(90);
+        rotateOut.setInterpolator(Interpolator.EASE_IN);
+
+        rotateOut.setOnFinished(event -> {
+            stage.setScene(newScene);
+            Node root = newScene.getRoot();
+            root.setRotationAxis(javafx.geometry.Point3D.ZERO.add(0, 1, 0));
+            root.setRotate(-90);
+
+            RotateTransition rotateIn = new RotateTransition(Duration.millis(400), root);
+            rotateIn.setFromAngle(-90);
+            rotateIn.setToAngle(0);
+            rotateIn.setInterpolator(Interpolator.EASE_OUT);
+            rotateIn.play();
+        });
+
+        rotateOut.play();
+    }
 
     @Override
-    public void start(Stage primaryStage) {
-        root = new VBox(15);
-        root.setPadding(new Insets(20));
-        root.setAlignment(Pos.TOP_CENTER);
-        root.setStyle("-fx-background-color: #f0f8ff;");
+    public void start(Stage primaryStage) throws Exception {
 
-        Label instruction = new Label("Insert Card (e.g., V12345678):");
-        TextField cardInput = new TextField();
-        cardInput.setPromptText("Enter card ID...");
-        Button submitButton = new Button("Submit");
-        ballotBox = new VBox(10);
+        Socket sock = new Socket("localhost", 12345);
+        out = new PrintWriter(sock.getOutputStream(), true);
+        in  = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 
-        submitButton.setOnAction(e -> {
-            String cardId = cardInput.getText().trim();
-            ballotBox.getChildren().clear();
-            root.getChildren().removeIf(node -> node instanceof VBox && node != ballotBox);
-
-            if (cardId.isEmpty()) {
-                ballotBox.getChildren().add(new Label("Card ID cannot be empty."));
-                return;
-            }
-
-            new Thread(() -> {
-                SocketHandler.sendCardInfoToCardReader("CRreader:" + cardId);
-
-                if (cardId.toUpperCase().startsWith("V")) {
-                    Template presidentTemplate = new Template(
-                            0,
-                            "President",
-                            "USA 2025 President",
-                            "Please select one:",
-                            new ButtonData(false),
-                            new ButtonData(true),
-                            new ButtonData(true),
-                            new QuestionInfo(new String[]{"Trump", "Kamala"})
-                    );
-
-                    Template vpTemplate = new Template(
-                            1,
-                            "Vice President",
-                            "USA vice president",
-                            "Please select one:",
-                            new ButtonData(true),
-                            new ButtonData(true),
-                            new ButtonData(false),
-                            new QuestionInfo(new String[]{"JD Vance", "Roman"})
-                    );
-
-                    this.currentTemplate = presidentTemplate;
-
-                    Platform.runLater(() -> {
-                        presentTemplate(presidentTemplate);
-
-                        new Thread(() -> {
-                            try {
-                                Thread.sleep(6000);
-                                Platform.runLater(() -> presentTemplate(vpTemplate));
-                            } catch (InterruptedException ex) {
-                                ex.printStackTrace();
-                            }
-                        }).start();
-                    });
-                } else {
-                    Platform.runLater(() -> ballotBox.getChildren().add(new Label("Non-voter card detected.")));
+        // listen for failure tag
+        new Thread(() -> {
+            try {
+                String line;
+                //new code
+                while ((line = in.readLine()) != null) {
+                    switch (line) {
+                        case "FAILURE", "TURN_OFF" -> Platform.runLater(() -> {
+                            stage.close();
+                            Platform.exit();
+                        });
+                        case "SCREEN_FAILURE" -> setFailure(true);
+                        case "SCREEN_OK"      -> setFailure(false);
+                    }
                 }
-            }).start();
-        });
 
-        root.getChildren().addAll(instruction, cardInput, submitButton, new Separator(), ballotBox);
-        Scene scene = new Scene(root, 600, 600);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Voting Screen");
-        primaryStage.show();
+            } catch (IOException e) {
+                Platform.runLater(() -> {
+                    stage.close();
+                    Platform.exit();
+                });
+            }
+        }).start();
+        this.stage = primaryStage;
+        resetToCardInsertPage();
     }
 
-    /**
-     * Shows the given template on the screen, replacing the current view.
-     */
-    public void presentTemplate(Template template) {
-        VBox votingPane = new VBox(12);
-        votingPane.setAlignment(Pos.CENTER);
-        votingPane.setPadding(new Insets(15));
-        votingPane.setStyle("-fx-background-color: #e6f2ff;");
+    public void screenOff() {
+        isOn = false;
+        template = null;
+        System.out.println("[Screen] Powered OFF.");
+    }
 
-        Label title = new Label(template.getTitle());
-        title.setFont(Font.font("Verdana", 22));
-        Label description = new Label(template.getDescription());
-        Label instructions = new Label(template.getInstructions());
+    //new code
+    public void setFailure(boolean status) {
+        this.status = status;
+        if (status) System.out.println("[Screen] FAILURE detected!");
+    }
 
-        title.setWrapText(true);
-        description.setWrapText(true);
-        instructions.setWrapText(true);
+    public void resetToCardInsertPage() {
+        Platform.runLater(() -> {
+            ImageView logo = new ImageView(new Image(
+                    Objects.requireNonNull(getClass().getResourceAsStream("/assets/logo.png"))));
+            logo.setFitWidth(500);
+            logo.setPreserveRatio(true);
 
-        votingPane.getChildren().addAll(title, description, instructions);
+            VBox root = new VBox(20);
+            root.setStyle("-fx-background-color: #003366;");
+            root.setPadding(new Insets(20));
+            root.setAlignment(Pos.TOP_CENTER);
 
-        ToggleGroup group = new ToggleGroup();
-        QuestionInfo qInfo = template.getQuestionData();
-        String[] options = qInfo.getOptions();
+            Label instruction = new Label("Insert Card (e.g., O12345678 or V12345678):");
+            instruction.setStyle("-fx-text-fill: white; -fx-font-size: 18px;");
 
-        for (int i = 0; i < options.length; i++) {
-            String opt = options[i];
-            RadioButton btn = new RadioButton(opt);
-            btn.setToggleGroup(group);
-            final int idx = i;
-            btn.setOnAction(e -> {
-                template.getQuestionData().setSelectionIndex(idx);
-            });
-            votingPane.getChildren().add(btn);
-        }
+            TextField cardInput = new TextField();
+            cardInput.setMaxWidth(320);
+            cardInput.setPromptText("Enter card ID...");
+            cardInput.setStyle("-fx-font-size: 14px;");
 
-        HBox buttonsBox = new HBox(20);
-        buttonsBox.setAlignment(Pos.CENTER);
+            Button submitButton = new Button("Submit");
+            submitButton.setStyle("-fx-font-size: 16px;");
+            submitButton.setPrefWidth(100);
 
-        if (template.getSubmitButton().getActive()) {
-            Button submit = new Button("Submit");
-            submit.setOnAction(e -> {
-                template.getSubmitButton().pressButton();
-                exitReady = true;
+            ballotBox = new VBox(10);
+            ballotBox.setAlignment(Pos.CENTER);
+
+            submitButton.setOnAction(e -> {
+                String cardId = cardInput.getText().trim();
+                System.out.println("[Screen]  Submit clicked: " + cardId);
                 ballotBox.getChildren().clear();
-                ballotBox.getChildren().add(new Label("✅ Vote submitted."));
-            });
-            buttonsBox.getChildren().add(submit);
-        }
 
-        if (template.getNextButton().getActive()) {
-            Button next = new Button("Next");
-            next.setOnAction(e -> {
-                template.getNextButton().pressButton();
-                ballotBox.getChildren().clear();
-                ballotBox.getChildren().add(new Label("Next pressed (not yet implemented)."));
-            });
-            buttonsBox.getChildren().add(next);
-        }
+                if (cardId.isEmpty()) {
+                    Label warning = new Label(" Card ID cannot be empty.");
+                    warning.setStyle("-fx-text-fill: yellow; -fx-font-size: 14px;");
+                    ballotBox.getChildren().add(warning);
+                    return;
+                }
 
-        if (template.getPreviousButton().getActive()) {
-            Button back = new Button("Back");
-            back.setOnAction(e -> {
-                template.getPreviousButton().pressButton();
-                ballotBox.getChildren().clear();
-                ballotBox.getChildren().add(new Label("Back pressed (not yet implemented)."));
-            });
-            buttonsBox.getChildren().add(back);
-        }
+                new Thread(() -> {
+                    try {
+                        if (socket == null || socket.isClosed()) {
+                            System.out.println("[Screen]  Connecting to server...");
+                            socket = new Socket("localhost", 9999);
+                            System.out.println("[Screen]  Socket connected");
 
-        votingPane.getChildren().add(buttonsBox);
+                            listener = new Listener(socket, this);
+                            Thread listenerThread = new Thread(listener);
+                            listenerThread.start();
+                            System.out.println("[Screen] Listener thread started");
+                        }
+
+                        listener.sendCardId(cardId);
+
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                        Platform.runLater(() -> {
+                            Label error = new Label("Could not connect: " + ex.getMessage());
+                            error.setStyle("-fx-text-fill: red;");
+                            ballotBox.getChildren().add(error);
+                        });
+                    }
+                }).start();
+            });
+
+            root.getChildren().addAll(logo, instruction, cardInput, submitButton, ballotBox);
+            Scene scene = new Scene(root, 1000, 700);
+            stage.setScene(scene);
+            stage.setTitle("Voting Machine");
+            stage.show();
+        });
+    }
+
+    public void receiveTemplate(Template template) {
+        System.out.println("Display.Template received");
+        this.template = template;
+        ready = false;
 
         Platform.runLater(() -> {
-            root.getChildren().clear();
-            root.getChildren().add(votingPane);
+            VotingMachinePage newPage = new VotingMachinePage(template);
+
+            newPage.getPreviousButton().setOnAction(event -> {
+                template.getPreviousButton().pressButton();
+                ready = true;
+            });
+
+            newPage.getNextButton().setOnAction(event -> {
+                if (template.getQuestionData().getSelection() == -1) {
+                    Alert alert = new Alert(Alert.AlertType.WARNING, "Please select an option before proceeding.");
+                    alert.showAndWait();
+                } else {
+                    template.getNextButton().pressButton();
+                    ready = true;
+                }
+            });
+
+            newPage.getSubmitButton().setOnAction(event -> {
+                if (template.getQuestionData().getSelection() == -1) {
+                    Alert alert = new Alert(Alert.AlertType.WARNING, "Please select an option before submitting.");
+                    alert.showAndWait();
+                } else {
+                    newPage.submitVote();
+                    ready = true;
+
+                    ImageView logo = new ImageView(new Image(
+                            Objects.requireNonNull(getClass().getResourceAsStream("/assets/logo.png"))
+                    ));
+                    logo.setFitWidth(400);
+                    logo.setPreserveRatio(true);
+
+                    // --- End Screen Layout ---
+                    Label message = new Label("Voting completed.\n💳 Card ejected.");
+                    message.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+                    VBox endBox = new VBox(20, logo, message);
+                    endBox.setAlignment(Pos.CENTER);
+                    endBox.setPadding(new Insets(30));
+                    endBox.setStyle("-fx-background-color: #003366;");
+
+                    Scene endScene = new Scene(endBox, 1000, 700);
+                    stage.setScene(endScene);
+
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(30000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        Platform.runLater(this::resetToCardInsertPage);
+                    }).start();
+                }
+            });
+
+            playSceneTransition(stage.getScene().getRoot(), newPage.getScene());
         });
     }
 
-    public boolean exitReady() {
-        return exitReady;
+    public boolean isReady() {
+        return ready;
+    }
+
+    public boolean failure() {
+        return failed;
     }
 
     public Template returnTemplate() {
-        return currentTemplate;
+        return template;
     }
 
     public static void main(String[] args) {

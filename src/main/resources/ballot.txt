@@ -10,13 +10,13 @@
     "id" : 0,
     "title" : "President",
     "description" : "USA 2025 President",
-    "options" : [ "Trump", "Kamala" ],
+    "options" : [ "Donald Trump", "Kamala Harris" ],
     "maxSelections" : 1
   }, {
     "id" : 1,
     "title" : "Vice president",
     "description" : "USA vice president",
-    "options" : [ "JD Vance", "Roman" ],
+    "options" : [ "JD Vance", "Gruia-Catalin Roman" ],
     "maxSelections" : 1
   } ]
 }

@@ -1,0 +1,26 @@
+[ {
+  "id" : "999",
+  "title" : "Admin Panel",
+  "description" : "This is a secure control panel for election officials.",
+  "selectedOption" : "Close Voting Session"
+}, {
+  "id" : "999",
+  "title" : "Admin Panel",
+  "description" : "This is a secure control panel for election officials.",
+  "selectedOption" : "Open Voting Session"
+}, {
+  "id" : "999",
+  "title" : "Admin Panel",
+  "description" : "This is a secure control panel for election officials.",
+  "selectedOption" : "Open Voting Session"
+}, {
+  "id" : "0",
+  "title" : "President",
+  "description" : "USA 2025 President",
+  "selectedOption" : "Donald Trump"
+}, {
+  "id" : "1",
+  "title" : "Vice president",
+  "description" : "USA vice president",
+  "selectedOption" : "Gruia-Catalin Roman"
+} ]

@@ -14,6 +14,12 @@ public class VotingManager implements Runnable {
 
     private final VotingProcess votingProcess;
 
+    private boolean votingOpen = false;
+
+    public void setVotingOpen(boolean open) {
+        this.votingOpen = open;
+    }
+
     public VotingManager(VotingProcess votingProcess) {
         this.votingProcess = votingProcess;
     }
@@ -24,9 +30,13 @@ public class VotingManager implements Runnable {
 
     @Override
     public void run() {
-        List<Template> templates = loadTemplates();
 
-      //  votingProcess.turnOn(); // Optional if you want screen on outside runTemplate
+        if (!votingOpen) {
+            System.out.println("[VotingManager] Voting is closed. Aborting session.");
+            return;
+        }
+
+        List<Template> templates = loadTemplates();
 
         for (Template t : templates) {
             votingProcess.runTemplate(t);
@@ -37,7 +47,7 @@ public class VotingManager implements Runnable {
 
 
 
-    private List<Template> loadTemplates() {
+    private  List<Template> loadTemplates() {
         try {
             SDCard1 sdCard = new SDCard1(SDCard.Operation.read);
             SDCard1_Driver driver = new SDCard1_Driver(sdCard);
