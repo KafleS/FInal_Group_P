@@ -23,6 +23,10 @@ public class CardReaderDriver {
         reader.eraseCard();
     }
 
+    public CardReader getReader() {
+        return reader;
+    }
+
     public boolean hasFailure() {
         return reader.failure();
     }

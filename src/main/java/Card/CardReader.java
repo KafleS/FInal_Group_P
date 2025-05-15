@@ -1,18 +1,35 @@
 package Card;
 
-
-import java.io.IOException;
-
 public class CardReader {
     public boolean isCardInserted = false;
     private String cardData = null;
-
     private boolean status = false;
+
+    public void readInput(String socketInput) {
+        if (socketInput == null) {
+            System.out.println("CardReader ignored: null input.");
+            return;
+        }
+
+        if (socketInput.startsWith("CRreader:")) {
+            String data = socketInput.substring("CRreader:".length());
+            insertCard(data);
+            System.out.println("[CardReader] Card inserted from socket: " + data);
+        } else {
+            System.out.println("[CardReader] Ignored non-card input: " + socketInput);
+        }
+    }
 
     public void insertCard(String data) {
         isCardInserted = true;
+
+        if (data.startsWith("CRreader:")) {
+            data = data.substring("CRreader:".length());
+        }
+
         cardData = data;
-        System.out.println("Card inserted with data: " + data);
+        CardType type = CardType.resolve(cardData);
+        System.out.println("[CardReader] Card inserted with ID: " + cardData + " | Type: " + type);
     }
 
     public String readCard() {
@@ -20,7 +37,7 @@ public class CardReader {
     }
 
     public void ejectCard() {
-        System.out.println("Card ejected.");
+        System.out.println("[CardReader] Card ejected.");
         cardData = null;
         isCardInserted = false;
     }
@@ -28,14 +45,20 @@ public class CardReader {
     public void eraseCard() {
         if (isCardInserted) {
             cardData = "";
-            System.out.println("Card data erased.");
+            System.out.println("[CardReader] Card data erased.");
         }
     }
-    public CardType getCardType() throws IOException {
+
+    public CardType getCardType() {
         if (!isCardInserted || cardData == null) {
-            throw new IOException("No card present to check type.");
+            return CardType.UNKNOWN;
         }
         return CardType.resolve(cardData);
+    }
+
+    public String getCardInfo() {
+        if (!isCardInserted || cardData == null) return "No card inserted.";
+        return "Card ID: " + cardData + " | Type: " + CardType.resolve(cardData);
     }
 
     public boolean isCardPresent() {
@@ -46,7 +69,6 @@ public class CardReader {
         return status;
     }
 
-    // Demo functions below
     public void setFailure(boolean status) {
         this.status = status;
     }

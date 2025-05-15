@@ -1,0 +1,22 @@
+{
+  "preamble" : {
+    "ballotTitle" : "Voting Election",
+    "county" : "USA",
+    "state" : "NM",
+    "ballotID" : "3456",
+    "endDate" : "2025-05-14"
+  },
+  "propositions" : [ {
+    "id" : 0,
+    "title" : "President",
+    "description" : "USA President",
+    "options" : [ "Trump", "Kamala" ],
+    "maxSelections" : 1
+  }, {
+    "id" : 1,
+    "title" : "Vice President",
+    "description" : "USA Vice President",
+    "options" : [ "JD Vance", "Roman " ],
+    "maxSelections" : 1
+  } ]
+}
